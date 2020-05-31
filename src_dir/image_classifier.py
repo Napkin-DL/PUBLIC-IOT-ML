@@ -208,6 +208,10 @@ def parse_args():
     #########################
     parser.add_argument('--eval_batch_size', type=int,
                         default=100, help='The number of samples in each batch in evaluation.')
+    parser.add_argument('--train_num_data', type=int,
+                        help='The number of train samples')
+    parser.add_argument('--test_num_data', type=int,
+                        help='The number of test samples')
     parser.add_argument('--max_eval_num_batches', type=int,
                         default=None, help='Max number of batches to evaluate by default use all.')
     # parser.add_argument('--num_preprocessing_threads', type=int,
@@ -227,8 +231,9 @@ def parse_args():
                         default=None, help='The number of frames to use. Only used if is_video_model is True.')
     parser.add_argument('--write_text_graphdef', type=bool,
                         default=False, help='Whether to write a text version of graphdef.')
-
-    return parser.parse_known_args()
+    return_value = parser.parse_known_args()
+    print("parser.parse_known_args() : {}".format(return_value))
+    return return_value
 
 
 def _configure_learning_rate(args, num_samples_per_epoch, global_step):
@@ -416,7 +421,7 @@ def evaluation(args):
         # Select the dataset #
         ######################
         dataset = dataset_factory.get_dataset(
-            args.dataset_name, 'val', args.dataset_dir)
+            args.dataset_name, 'test', args.dataset_dir, args.test_num_data)
 
         ####################
         # Select the model #
@@ -441,6 +446,9 @@ def evaluation(args):
         # Select the preprocessing function #
         #####################################
         preprocessing_name = args.preprocessing_name or args.model_name
+        
+        print("eval_args.use_grayscale : {}".format(args.use_grayscale))
+        
         image_preprocessing_fn = preprocessing_factory.get_preprocessing(
             preprocessing_name,
             is_training=False,
@@ -524,7 +532,7 @@ def export_inference_graph(args):
     tf.logging.set_verbosity(tf.logging.INFO)
     with tf.Graph().as_default() as graph:
         dataset = dataset_factory.get_dataset(args.dataset_name, 'train',
-                                              args.dataset_dir)
+                                              args.dataset_dir, args.train_num_data)
         network_fn = nets_factory.get_network_fn(
             args.model_name,
             num_classes=(dataset.num_classes - args.labels_offset),
@@ -588,9 +596,12 @@ def freeze_graph(args):
 
 def main():
     args, unknown = parse_args()
+    print("********************* args : {}".format(args))
+    print("********************* unknown : {} ".format(unknown))
+    print("********************* args.use_grayscale : {}".format(args.use_grayscale))
 
-    print("********************* args.model_dir".format(args.model_dir))
-    print("********************* args.train_dir".format(args.train_dir))
+    print("********************* args.model_dir : {}".format(args.model_dir))
+    print("********************* args.train_dir : {}".format(args.train_dir))
     if not args.dataset_dir:
         raise ValueError(
             'You must supply the dataset directory with --dataset_dir')
@@ -615,7 +626,7 @@ def main():
         # Select the dataset #
         ######################
         dataset = dataset_factory.get_dataset(
-            args.dataset_name, 'train', args.dataset_dir)
+            args.dataset_name, 'train', args.dataset_dir, args.train_num_data)
 
         ######################
         # Select the network #
@@ -630,6 +641,8 @@ def main():
         # Select the preprocessing function #
         #####################################
         preprocessing_name = args.preprocessing_name or args.model_name
+        
+        print("train_args.use_grayscale : {}".format(args.use_grayscale))
         image_preprocessing_fn = preprocessing_factory.get_preprocessing(
             preprocessing_name,
             is_training=True,

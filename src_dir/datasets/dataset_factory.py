@@ -23,6 +23,7 @@ from datasets import flowers
 from datasets import imagenet
 from datasets import mnist
 from datasets import visualwakewords
+from datasets import captured_dataset
 
 datasets_map = {
     'cifar10': cifar10,
@@ -30,10 +31,11 @@ datasets_map = {
     'imagenet': imagenet,
     'mnist': mnist,
     'visualwakewords': visualwakewords,
+    'captured_dataset':captured_dataset,
 }
 
 
-def get_dataset(name, split_name, dataset_dir, file_pattern=None, reader=None):
+def get_dataset(name, split_name, dataset_dir, num_data, file_pattern=None, reader=None):
   """Given a dataset name and a split_name returns a Dataset.
 
   Args:
@@ -55,5 +57,6 @@ def get_dataset(name, split_name, dataset_dir, file_pattern=None, reader=None):
   return datasets_map[name].get_split(
       split_name,
       dataset_dir,
+      num_data,
       file_pattern,
       reader)
