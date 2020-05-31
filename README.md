@@ -14,8 +14,8 @@ tf version :1.x, python 2.7 버전
  - tfrecord전환 등 dataset 코드 수정
  
 ## [Doing]
- - 신규 image에서 tfrecord로 변화하는 코드 
- - SageMaker notebook 해설 넣기 (현재는 무관한 영문 base template으로 유지 중, 참고하여 수정하면 됨)
+ - 신규 image에서 tfrecord로 변화하는 코드 (Youngjoon)
+ - SageMaker notebook 해설 넣기 (현재는 무관한 영문 base template으로 유지 중, 참고하여 수정하면 됨)(Youngjoon)
  
 ## [To-Do]
  - multi-class로 변환 (optional)
