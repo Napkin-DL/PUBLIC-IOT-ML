@@ -12,18 +12,18 @@ tf version :1.x, python 2.7 버전
  - image-classifier 내 inference-graph, inference_frozen-graph, tflite 생성 추가
  - sagemaker 동작 코드로 전환
  - tfrecord전환 등 dataset 코드 수정
- 
+ - 신규 image에서 tfrecord로 변화하는 코드 (Youngjoon)
+ - SageMaker notebook 해설 넣기 (현재는 무관한 영문 base template으로 유지 중, 참고하여 수정하면 됨)(Youngjoon)
+ - fine-tune checkpoint 추가 반영 (Youngjoon)
 ## [Doing]
- - 
+
  
 ## [To-Do]
- - 신규 image에서 tfrecord로 변화하는 코드 
  - multi-class로 변환 (optional)
- - SageMaker notebook 해설 넣기 (현재는 무관한 영문 base template으로 유지 중, 참고하여 수정하면 됨)
- 
  - workshop 페이지 작성
    - object detection 하는 부분
    - training 하는 부분
    - training 후 inference 하는 부분 작성
-   
+ - SageMaker Ground Truth를 추가하기 (optional)
+ 
  !! ```완성도를 높이는 방향으로 추가해 주세요.```
