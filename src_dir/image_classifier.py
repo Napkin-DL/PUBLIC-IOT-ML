@@ -421,7 +421,7 @@ def evaluation(args):
         # Select the dataset #
         ######################
         dataset = dataset_factory.get_dataset(
-            args.dataset_name, 'test', args.dataset_dir, args.test_num_data)
+            args.dataset_name, 'val', args.dataset_dir, args.test_num_data)
 
         ####################
         # Select the model #
@@ -541,11 +541,11 @@ def export_inference_graph(args):
         num_channels = 1 if args.use_grayscale else 3
         if args.is_video_model:
             input_shape = [
-                args.batch_size, args.num_frames, image_size, image_size,
+                1, args.num_frames, image_size, image_size,
                 num_channels
             ]
         else:
-            input_shape = [args.batch_size,
+            input_shape = [1,
                            image_size, image_size, num_channels]
         placeholder = tf.placeholder(name='input', dtype=tf.float32,
                                      shape=input_shape)
