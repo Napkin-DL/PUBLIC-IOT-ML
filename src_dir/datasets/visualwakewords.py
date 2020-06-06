@@ -56,7 +56,7 @@ _NUM_CLASSES = 2
 LABELS_FILENAME = 'labels.txt'
 
 
-def get_split(split_name, dataset_dir, file_pattern=None, reader=None):
+def get_split(split_name, dataset_dir, num_data, file_pattern=None, reader=None):
   """Gets a dataset tuple with instructions for reading ImageNet.
 
   Args:

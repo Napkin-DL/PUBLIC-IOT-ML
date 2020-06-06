@@ -164,14 +164,14 @@ def run(image_path, dataset_dir):
     image_list = glob.glob(os.path.join(image_path, '*/*'))
     random.shuffle(image_list)
     total_cnt = len(image_list)
-    test_cnt = int(total_cnt/4) if int(total_cnt/4) > 0 else 1
+    test_cnt = int(total_cnt/5) if int(total_cnt/5) > 0 else 1
     train_cnt = total_cnt - test_cnt
 
     train_img_list = image_list[:train_cnt]
     test_img_list = image_list[train_cnt:]
 
     # Finally, write the labels file:
-    class_name = []
+    class_name = ['background']
     for label_item in glob.glob(os.path.join(image_path, '*')):
         class_name.append(label_item.split('/')[-1])
 
@@ -185,7 +185,7 @@ def run(image_path, dataset_dir):
 
 
     training_filename = _get_output_filename(dataset_dir, 'train')
-    testing_filename = _get_output_filename(dataset_dir, 'test')
+    testing_filename = _get_output_filename(dataset_dir, 'val')
 
     if tf.gfile.Exists(training_filename) and tf.gfile.Exists(testing_filename):
         print('Dataset files already exist. Exiting without re-creating them.')

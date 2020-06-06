@@ -596,12 +596,6 @@ def freeze_graph(args):
 
 def main():
     args, unknown = parse_args()
-    print("********************* args : {}".format(args))
-    print("********************* unknown : {} ".format(unknown))
-    print("********************* args.use_grayscale : {}".format(args.use_grayscale))
-
-    print("********************* args.model_dir : {}".format(args.model_dir))
-    print("********************* args.train_dir : {}".format(args.train_dir))
     if not args.dataset_dir:
         raise ValueError(
             'You must supply the dataset directory with --dataset_dir')
