@@ -1,0 +1,23 @@
+https://www.robots.ox.ac.uk/~vgg/data/pets/
+
+
+The Oxford-IIIT Pet Dataset
+ 
+ 
+Omkar M Parkhi and Andrea Vedaldi and Andrew Zisserman and C. V. Jawahar
+
+
+Overview
+We have created a 37 category pet dataset with roughly 200 images for each class. The images have a large variations in scale, pose and lighting. All images have an associated ground truth annotation of breed, head ROI, and pixel level trimap segmentation.
+
+License
+The dataset is available to download for commercial/research purposes under a Creative Commons Attribution-ShareAlike 4.0 International License. The copyright remains with the original owners of the images.
+
+Relevant Publications
+
+O. M. Parkhi, A. Vedaldi, A. Zisserman, C. V. Jawahar
+Cats and Dogs  
+IEEE Conference on Computer Vision and Pattern Recognition, 2012
+
+Acknowledgements
+This work is funded by The UK India Education and Research Initiative (UKIERI) and ERC Grant VisRec.
