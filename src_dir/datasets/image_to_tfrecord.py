@@ -41,8 +41,6 @@ import tensorflow as tf
 from datasets import dataset_utils
 
 
-# The number of training files.
-_NUM_TRAIN_FILES = 1
 
 # The height and width of each image.
 _IMAGE_SIZE = 128
@@ -78,23 +76,24 @@ def _add_to_tfrecord(filename, class_names_to_labels, tfrecord_writer, offset=0)
         with tf.Session('') as sess:
             num_images = len(filename)
             for j, images in enumerate(filename):
-                sys.stdout.write('\r>> Reading file [%s] image %d/%d' % (
-                    filename, offset + j + 1, offset + num_images))
-                sys.stdout.flush()
+#                 sys.stdout.write('\r>> Reading file [%s] image %d/%d' % (
+#                     filename, offset + j + 1, offset + num_images))
+#                 sys.stdout.flush()
                 label = class_names_to_labels[images.split('/')[-2]]
                 images = cv2.imread(images)
-                image = cv2.resize(images, dsize=(
-                    _IMAGE_SIZE, _IMAGE_SIZE), interpolation=cv2.INTER_CUBIC)
-                # image = np.squeeze(images).transpose((1, 2, 0))
-                
+                try:
+                    image = cv2.resize(images, dsize=(
+                        _IMAGE_SIZE, _IMAGE_SIZE), interpolation=cv2.INTER_CUBIC)
+                    # image = np.squeeze(images).transpose((1, 2, 0))
 
-                jpg_string = sess.run(encoded_image,
-                                      feed_dict={image_placeholder: image})
+                    jpg_string = sess.run(encoded_image,
+                                          feed_dict={image_placeholder: image})
 
-                example = dataset_utils.image_to_tfexample(
-                    jpg_string, b'jpg', _IMAGE_SIZE, _IMAGE_SIZE, label)
-                tfrecord_writer.write(example.SerializeToString())
-
+                    example = dataset_utils.image_to_tfexample(
+                        jpg_string, b'jpg', _IMAGE_SIZE, _IMAGE_SIZE, label)
+                    tfrecord_writer.write(example.SerializeToString())
+                except:
+                    pass
     return offset + num_images
 
 
@@ -164,14 +163,15 @@ def run(image_path, dataset_dir):
     image_list = glob.glob(os.path.join(image_path, '*/*'))
     random.shuffle(image_list)
     total_cnt = len(image_list)
-    test_cnt = int(total_cnt/5) if int(total_cnt/5) > 0 else 1
+    test_cnt = int(total_cnt/6) if int(total_cnt/6) > 0 else 1
     train_cnt = total_cnt - test_cnt
 
     train_img_list = image_list[:train_cnt]
     test_img_list = image_list[train_cnt:]
 
     # Finally, write the labels file:
-    class_name = ['background']
+#     class_name = ['background']
+    class_name = []
     for label_item in glob.glob(os.path.join(image_path, '*')):
         class_name.append(label_item.split('/')[-1])
 

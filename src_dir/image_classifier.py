@@ -148,7 +148,7 @@ def parse_args():
     parser.add_argument('--end_learning_rate', type=float,
                         default=0.01, help='Initial learning rate.')
     parser.add_argument('--label_smoothing', type=float,
-                        default=0.0, help='The amount of label smoothing.')
+                        default=0.1, help='The amount of label smoothing.')
     parser.add_argument('--learning_rate_decay_factor', type=float,
                         default=0.94, help='Learning rate decay factor.')
     parser.add_argument('--num_epochs_per_decay', type=float, default=2.0,
