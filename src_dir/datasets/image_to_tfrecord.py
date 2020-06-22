@@ -43,7 +43,7 @@ from datasets import dataset_utils
 
 
 # The height and width of each image.
-_IMAGE_SIZE = 128
+_IMAGE_SIZE = 224
 
 
 def _add_to_tfrecord(filename, class_names_to_labels, tfrecord_writer, offset=0):
