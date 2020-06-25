@@ -1,26 +1,28 @@
 import tensorflow as tf
 import os
+import random
 import numpy as np
 from tensorflow.python.platform import gfile
 from PIL import Image
-from matplotlib.pyplot import imshow
 
-import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.pyplot import imshow
 import seaborn as sns
 import warnings
 import collections
 import json
 from sklearn.model_selection import StratifiedKFold, train_test_split, ShuffleSplit
-from sklearn.metrics import (confusion_matrix, classification_report, accuracy_score, roc_curve, average_precision_score,
-                            precision_recall_curve, precision_score, recall_score, f1_score, matthews_corrcoef, auc)
+
+from sklearn.metrics import roc_curve, auc, roc_auc_score, precision_recall_curve, average_precision_score
+from itertools import cycle
+
 
 try:
     from joblib import dump, load
 except ImportError:
     from sklearn.externals.joblib import dump, load
-    
+
 
 tf.global_variables_initializer()
 tf.reset_default_graph()
@@ -81,7 +83,21 @@ class MobileNetInference(object):
         pred_label_str = self.class_map[pred_label]
         pred_score = pred_scores[0][pred_label]
         
-        return pred_label, pred_label_str, pred_score
+        return pred_label, pred_label_str, pred_score, pred_scores.ravel()
+
+    
+def get_test_scores(model, test_img_list, test_img_path, num_classes):
+    num_test = len(test_img_list)
+    y_score = np.zeros((num_test, num_classes))
+    y_pred = np.zeros(num_test, dtype='int')
+    
+    for idx, fname in enumerate(test_img_list):
+        img_filepath = os.path.join(test_img_path, fname)
+        pred_cls, pred_cls_str, pred_score, pred_scores = model.predict(img_filepath, show_image=False)
+        y_score[idx, :] = pred_scores 
+        y_pred[idx] = pred_cls
+        
+    return y_score, y_pred
 
 
 def plot_roc_curve(y_true, y_score, is_single_fig=False):
@@ -125,72 +141,140 @@ def plot_conf_mtx(y_true, y_score, thresh=0.5, class_labels=['0','1'], is_single
     print("confusion matrix (cutoff={})".format(thresh))
     print(classification_report(y_true, y_pred, target_names=class_labels))
     conf_mtx = confusion_matrix(y_true, y_pred)
-    sns.heatmap(conf_mtx, xticklabels=class_labels, yticklabels=class_labels, annot=True, fmt='d')
+    sns.heatmap(conf_mtx, xticklabels=class_labels, yticklabels=class_labels, annot=True, fmt='d', cmap=plt.cm.Blues)
     plt.title('Confusion Matrix')
     plt.ylabel('True Class')
     plt.xlabel('Predicted Class')
     if is_single_fig:
         plt.show()
 
-def prob_barplot(y_score, bins=np.arange(0.0, 1.11, 0.1), right=False, filename=None, figsize=(10,4), is_single_fig=False):
+def plot_roc_curve_multiclass(y_true_ohe, y_score, num_classes, color_table, skip_legend=5, is_single_fig=False):
     """
-    Plot barplot by binning predicted scores ranging from 0 to 1
-    """    
-    c = pd.cut(y_score, bins, right=right)
-    counts = c.value_counts()
-    percents = 100. * counts / len(c)
-    percents.plot.bar(rot=0, figsize=figsize)
-    plt.title('Histogram of score')
-    print(percents)
-    if filename is not None:
-        plt.savefig('{}.png'.format(filename))   
-    if is_single_fig:
-        plt.show()
-    
-def evaluate_prediction(y_true, y_score, thresh=0.5):
-    """
-    All-in-one function for evaluation. 
-    """    
-    plt.figure(figsize=(14,4))
-    plt.subplot(1,3,1)
-    plot_roc_curve(y_true, y_score)
-    plt.subplot(1,3,2)    
-    plot_pr_curve(y_true, y_score)
-    plt.subplot(1,3,3)    
-    plot_conf_mtx(y_true, y_score, thresh) 
-    plt.show()
+    Plot ROC curve to multi-class
+    """     
+    fpr = dict()
+    tpr = dict()
+    roc_auc = dict()
+    for i in range(num_classes):
+        fpr[i], tpr[i], _ = roc_curve(y_true_ohe[:, i], y_score[:, i])
+        roc_auc[i] = auc(fpr[i], tpr[i])
 
-def get_score_df(y_true, y_score, start_score=0.0, end_score=0.7, cutoff_interval=0.05):
-    """
-    Get a dataframe contains general metrics
-    """    
-    import warnings
-    warnings.filterwarnings("ignore")
-    score = []
+    # Compute micro-average ROC curve and ROC area
+    fpr["micro"], tpr["micro"], _ = roc_curve(y_true_ohe.ravel(), y_score.ravel())
+    roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
     
-    for cutoff in np.arange(start_score, end_score+0.01, cutoff_interval)[1:]:
-        y_pred = np.where(y_score >= cutoff, 1, 0)
-        conf_mat = confusion_matrix(y_true, y_pred)
-        tn, fp, fn, tp = conf_mat[0,0], conf_mat[0,1], conf_mat[1,0], conf_mat[1,1]
-        precision = precision_score(y_true, y_pred)
-        recall = recall_score(y_true, y_pred)
-        if precision !=0 and recall !=0 :
-            f1 = f1_score(y_true, y_pred)
+    # First aggregate all false positive rates
+    all_fpr = np.unique(np.concatenate([fpr[i] for i in range(num_classes)]))
+
+    # Then interpolate all ROC curves at this points
+    mean_tpr = np.zeros_like(all_fpr)
+    for i in range(num_classes):
+        mean_tpr += np.interp(all_fpr, fpr[i], tpr[i])
+
+    # Finally average it and compute AUC
+    mean_tpr /= num_classes
+
+    fpr["macro"] = all_fpr
+    tpr["macro"] = mean_tpr
+    roc_auc["macro"] = auc(fpr["macro"], tpr["macro"])  
+    
+    colors = cycle(color_table)
+    
+    fig, ax = plt.subplots(figsize=(8,8))
+    ax.plot(fpr["micro"], tpr["micro"],
+            label='micro-average ROC curve (area = {0:0.5f})'.format(roc_auc["micro"]),
+            color='deeppink', linewidth=3)
+
+    ax.plot(fpr["macro"], tpr["macro"],
+            label='macro-average ROC curve (area = {0:0.5f})'.format(roc_auc["macro"]),
+            color='navy', linewidth=3)
+
+    for i, color in zip(range(num_classes), colors):
+        if i % skip_legend == 0:
+            label='ROC curve of class {0} (area = {1:0.4f})'.format(i, roc_auc[i])
         else:
-            f1 = 0     
-        mcc = matthews_corrcoef(y_true, y_pred)
-        score.append([cutoff, tp, fp, tn, fn, precision, recall, f1, mcc])
-        
-    score_df = pd.DataFrame(score, columns = ['Cutoff', 'TP', 'FP', 'TN' ,'FN', 'Precision', 'Recall', 'F1', 'MCC'])
-    return score_df
+            label=None
+        ax.plot(fpr[i], tpr[i], color=color, label=label, lw=2, alpha=0.3, linestyle=':')
+        ax.grid(alpha=.4)
 
-def get_test_scores(model, test_img_list, test_img_path):
-    num_test = len(test_img_list)
-    y_score = np.zeros(num_test)
-
-    for idx, fname in enumerate(test_img_list):
-        img_filepath = os.path.join(test_img_path, fname)
-        pred_cls, pred_cls_str, pred_score = model.predict(img_filepath, show_image=False)
-        y_score[idx] = pred_cls    
+    ax.plot([0, 1], [0, 1], 'k--', lw=2)
+    ax.set_xlim([0.0, 1.0])
+    ax.set_ylim([0.0, 1.05])
+    ax.set_xlabel('False Positive Rate')
+    ax.set_ylabel('True Positive Rate')
+    ax.set_title('Receiver operating characteristic to multi-class')
+    ax.legend(loc="lower right", prop={'size':10})
+    if is_single_fig:
+        plt.show()    
         
-    return y_score
+        
+def plot_pr_curve_multiclass(y_true_ohe, y_score, num_classes, color_table, skip_legend=5, is_single_fig=False):
+    """
+    Plot precision-recall curve to multi-class
+    """      
+    precision = dict()
+    recall = dict()
+    average_precision = dict()
+    for i in range(num_classes):
+        precision[i], recall[i], _ = precision_recall_curve(y_true_ohe[:, i], y_score[:, i])
+        average_precision[i] = average_precision_score(y_true_ohe[:, i], y_score[:, i])
+
+    # A "micro-average": quantifying score on all classes jointly
+    precision["micro"], recall["micro"], _ = precision_recall_curve(y_true_ohe.ravel(), y_score.ravel())
+    average_precision["micro"] = average_precision_score(y_true_ohe, y_score, average="micro")
+    average_precision["macro"] = average_precision_score(y_true_ohe, y_score, average="macro")
+
+    all_precision = np.unique(np.concatenate([precision[i] for i in range(num_classes)]))
+
+    # Then interpolate all ROC curves at this points
+    mean_recall = np.zeros_like(all_precision)
+    for i in range(num_classes):
+        mean_recall += np.interp(all_precision, precision[i], recall[i])
+
+    # Finally average it and compute AUC
+    mean_recall /= num_classes
+
+    precision["macro"] = all_precision
+    recall["macro"] = mean_recall
+
+    colors = cycle(color_table)
+    fig, ax = plt.subplots(figsize=(8,8))    
+    label = 'micro-average Precision-recall (area = {0:0.4f})'.format(average_precision["micro"])
+    ax.plot(recall["micro"], precision["micro"], label=label, color='deeppink', lw=3)
+
+    label = 'macro-average Precision-recall (area = {0:0.4f})'.format(average_precision["macro"])
+    ax.plot(recall["macro"], precision["macro"], label=label, color='navy', lw=3)
+
+    for i, color in zip(range(num_classes), colors):
+        if i % skip_legend == 0:
+            label = 'PR for class {0} (area = {1:0.4f})'.format(i, average_precision[i])
+        else:
+            label = None
+        ax.plot(recall[i], precision[i], color=color, label=label, lw=2, alpha=0.5, linestyle=':')  
+
+    ax.set_xlim([0.0, 1.0])
+    ax.set_ylim([0.0, 1.05])
+    ax.set_xlabel('Recall')
+    ax.set_ylabel('Precision')
+    ax.set_title('Precision-Recall curve to multi-class')
+    ax.legend(loc="lower left", prop={'size':10})
+   
+    if is_single_fig:
+        plt.show()  
+        
+        
+def plot_conf_mtx_multiclass(y_true, y_pred, labels, is_single_fig=False):
+    """
+    Plot confusion matrix to multi-class
+    """         
+    from sklearn.metrics import confusion_matrix, classification_report
+    import seaborn as sns
+    
+    cm = confusion_matrix(y_true, y_pred) 
+    print(classification_report(y_true, y_pred, target_names=labels))
+    plt.figure(figsize=(14,12))
+    plt.title('Confusion Matrix')    
+    sns.heatmap(cm, xticklabels=labels, yticklabels=labels, annot=True, fmt='d', cmap=plt.cm.Blues)
+    
+    if is_single_fig:
+        plt.show()                     
