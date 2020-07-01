@@ -163,7 +163,8 @@ def run(image_path, dataset_dir):
     image_list = glob.glob(os.path.join(image_path, '*/*'))
     random.shuffle(image_list)
     total_cnt = len(image_list)
-    test_cnt = int(total_cnt/6) if int(total_cnt/6) > 0 else 1
+    test_cnt = int(total_cnt/10)
+    test_cnt = test_cnt if test_cnt > 0 else 1
     train_cnt = total_cnt - test_cnt
 
     train_img_list = image_list[:train_cnt]
@@ -174,7 +175,7 @@ def run(image_path, dataset_dir):
     class_name = []
     for label_item in glob.glob(os.path.join(image_path, '*')):
         class_name.append(label_item.split('/')[-1])
-
+    class_name.sort()
     labels_to_class_names = dict(zip(range(len(class_name)), class_name))
 
     class_names_to_labels = {}
