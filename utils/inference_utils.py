@@ -16,7 +16,7 @@ from sklearn.model_selection import StratifiedKFold, train_test_split, ShuffleSp
 
 from sklearn.metrics import roc_curve, auc, roc_auc_score, precision_recall_curve, average_precision_score
 from itertools import cycle
-
+import cv2
 
 try:
     from joblib import dump, load
@@ -66,9 +66,11 @@ class MobileNetInference(object):
     
     def predict(self, img_filepath, img_size=224, show_image=True):    
         # Open image data and resize it
-        img = Image.open(img_filepath)
-        img = img.resize((img_size, img_size)) 
-        img_arr = np.asarray(img) 
+        img = cv2.imread(img_filepath)
+        img_arr = cv2.resize(img, dsize=(img_size, img_size),interpolation=cv2.INTER_CUBIC)
+#         img = Image.open(img_filepath)
+#         img = img.resize((img_size, img_size)) 
+#         img_arr = np.asarray(img) 
 
         if show_image: 
             imshow(img_arr)

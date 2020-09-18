@@ -79,13 +79,16 @@ def _add_to_tfrecord(filename, class_names_to_labels, tfrecord_writer, offset=0)
 #                 sys.stdout.write('\r>> Reading file [%s] image %d/%d' % (
 #                     filename, offset + j + 1, offset + num_images))
 #                 sys.stdout.flush()
+#                 print("images_path : {}".format(images))
                 label = class_names_to_labels[images.split('/')[-2]]
+#                 print("label : {}".format(label))
                 images = cv2.imread(images)
+
                 try:
                     image = cv2.resize(images, dsize=(
                         _IMAGE_SIZE, _IMAGE_SIZE), interpolation=cv2.INTER_CUBIC)
                     # image = np.squeeze(images).transpose((1, 2, 0))
-
+#                     print("images : {}".format(images))
                     jpg_string = sess.run(encoded_image,
                                           feed_dict={image_placeholder: image})
 
@@ -160,21 +163,27 @@ def run(image_path, dataset_dir):
     if not tf.gfile.Exists(dataset_dir):
         tf.gfile.MakeDirs(dataset_dir)
 
-    image_list = glob.glob(os.path.join(image_path, '*/*'))
-    random.shuffle(image_list)
-    total_cnt = len(image_list)
-    test_cnt = int(total_cnt/10)
-    test_cnt = test_cnt if test_cnt > 0 else 1
-    train_cnt = total_cnt - test_cnt
+#     image_list = glob.glob(os.path.join(image_path, '*/*'))
+#     random.shuffle(image_list)
+#     total_cnt = len(image_list)
+#     test_cnt = int(total_cnt/6) if int(total_cnt/6) > 0 else 1
+#     train_cnt = total_cnt - test_cnt
 
-    train_img_list = image_list[:train_cnt]
-    test_img_list = image_list[train_cnt:]
+#     train_img_list = image_list[:train_cnt]
+#     test_img_list = image_list[train_cnt:]
 
+    train_img_list = glob.glob(os.path.join(image_path, 'train/*/*'))
+    test_img_list = glob.glob(os.path.join(image_path, 'val/*/*'))
+    
+    train_cnt = len(train_img_list)
+    test_cnt = len(test_img_list)
     # Finally, write the labels file:
 #     class_name = ['background']
     class_name = []
-    for label_item in glob.glob(os.path.join(image_path, '*')):
+    for label_item in glob.glob(os.path.join(image_path, 'train/*')):
         class_name.append(label_item.split('/')[-1])
+
+
     class_name.sort()
     labels_to_class_names = dict(zip(range(len(class_name)), class_name))
 

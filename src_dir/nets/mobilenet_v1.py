@@ -433,7 +433,7 @@ def mobilenet_v1_arg_scope(
     weight_decay=0.00004,
     stddev=0.09,
     regularize_depthwise=False,
-    batch_norm_decay=0.9997,
+    batch_norm_decay=0.97,
     batch_norm_epsilon=0.001,
     batch_norm_updates_collections=tf.compat.v1.GraphKeys.UPDATE_OPS,
     normalizer_fn=slim.batch_norm):
